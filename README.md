@@ -10,9 +10,9 @@ Requires:
 
 Usage:
 
-rccsv2gems.pl INPUTFILENAME OUTPUTFILENAME --minsats=X --disable-gps-cleanup
-(optional)  --minsats=X where X is the minimum number of gps satellites required for valid data (sets lat/long to null if GpsSats value is less than min) Default is 4.
-(optional)  --disable-gps-cleanup disables the cleanup per the GpsSats value. Useful when you don't care or don't have the GpsSats column logged.
+    rccsv2gems.pl INPUTFILENAME OUTPUTFILENAME --minsats=X --disable-gps-cleanup
+        (optional)  --minsats=X where X is the minimum number of gps satellites required for valid data (sets lat/long to null if GpsSats value is less than min) Default is 4.
+        (optional)  --disable-gps-cleanup disables the cleanup per the GpsSats value. Useful when you don't care or don't have the GpsSats column logged.
 
 
 Installing Dependencies
