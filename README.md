@@ -18,7 +18,7 @@ Usage:
 Installing Dependencies
 =======================
 
-This script required a Perl add-on module for processing CSv files. To install this module, issue the command:
+This script requires a Perl add-on module for processing CSV files, the native file format for RaceCapture/Pro. To install this module, issue the command:
 
     > cpan Text::CSV
 
