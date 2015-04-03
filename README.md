@@ -25,15 +25,15 @@ This script requires a Perl add-on module for processing CSV files, the native f
 First time example 
 ==================
 
-#Initial Conversion
+##Initial Conversion
 Here's an example using demo log file. Assuming requirements are met, issue the following command:
 
     > perl rccsv2gems.pl RCP_Demo.LOG  RCP_Demo_dlog.csv
 
-#Intermediate conversion
+##Intermediate conversion
 Now, open dlog99, select file->import, follow the instructions to select the RCP_Demo_dlog.csv you created in the previous step, and save it as a .stf file
 
-#Opening in GEMS
+##Opening in GEMS
 Finally, load GEMS and load the .stf file you created in the the last step
 
 
