@@ -1,3 +1,4 @@
+
 #!/usr/bin/perl
 
 ##  Author:      John Freund  jpf11@cornell.edu
@@ -8,45 +9,47 @@
 ##         or AEM Data Analysis.
 ##  Notes:      Thanks to neoraptor on the autosportlabs.org forums for
 ##         providing the format!
-##  Version:      1.6
+##  Version:      1.7
 ##
-##  Changes:      1.6 - Added time interpolation.  Found that Dlog99 was dropping data
+##  Changes:
+##         1.7 - Convert to new logfile format supporting UTC timestamps
+##         1.6 - Added time interpolation.  Found that Dlog99 was dropping data
 ##            when data points had the same time values, which they would
 ##            as this script was setting empty time values to the last known
 ##            good time value.  To prevent the dropping I added a function
 ##            that interpolates time for data points between logged time
-##            and sets the interpolated time values in the output.   
-##         1.5 - Removed second tag_junk_lines function call from main as it    
+##            and sets the interpolated time values in the output.
+##         1.5 - Removed second tag_junk_lines function call from main as it
 ##            was redundant.  Added options for new parameters mingps and
 ##            disable-gps-cleanup.  "--mingps=X" sets the minimum
-##            number of gps satellites required for gps data to be valid, 
+##            number of gps satellites required for gps data to be valid,
 ##            defaults to 4.  "--disable-gps-cleanup" will disable cleaning up
 ##            by the data (defaults to false) and switch pre-cleanup to setting
 ##            all gps values prior to the first good set to the same as the
 ##            first good set.  Added lots of output to the
 ##            various data processing functions to indicate their status.
 ##            Enabled the gps lat/long conversion from degrees to radians
-##            to make AEM/GEMS DA setup more seamless since they expect 
+##            to make AEM/GEMS DA setup more seamless since they expect
 ##            radians by default.
 ##         1.4 - Fixed an issue with how we fill in the blanks.  We were filling
-##            in the blanks with last known good values, including "good" 
+##            in the blanks with last known good values, including "good"
 ##            values from lines tagged for removal.  Changed to ignore those
-##            lines so values from them don't corrupt the rest of the data.    
+##            lines so values from them don't corrupt the rest of the data.
 ##         1.3 - Added comments.  Changed junk character handling from setting
 ##            values to prior "good" values to instead just delete the
-##            offending lines.  Also changed ctrl M stripping to be all 
-##            elements as random ^M were screwing up other text matches. 
-##            Moved the ^M stripping to earlier in the pipeline too.   
+##            offending lines.  Also changed ctrl M stripping to be all
+##            elements as random ^M were screwing up other text matches.
+##            Moved the ^M stripping to earlier in the pipeline too.
 ##         1.2 - Found that AEM/GEMS DA had issues with automatically
 ##            figuring out the track layout with how I was cleaning
 ##            up gps data.  For any missing data in the beginning of the
 ##            file I was entering "0.000" up until the data starts showing
-##            up (after which any missing data is filled with the last 
-##            known data).  This is a problem if all your gps data isn't 
+##            up (after which any missing data is filled with the last
+##            known data).  This is a problem if all your gps data isn't
 ##            around 0.000,0.000 as your data goes from that coordinate
-##            to whatever the first real lat/long you have in your data. 
+##            to whatever the first real lat/long you have in your data.
 ##            When AEM/GEMS DA reads the initial 0, it uses that to figure
-##            out along with your other gps data how to draw the track 
+##            out along with your other gps data how to draw the track
 ##            and basically your line starts at 0,0 and goes immediately to
 ##            your first coordinate and continues on, and the track scales
 ##            WAY out (unless you happened to be logging data around 0,0).
@@ -54,20 +57,20 @@
 ##            GPS coordinates.
 ##         1.1 - Added code to zero_start_time function that handles time
 ##            rollover at midnight.  Not a complete catch as to make
-##            things simpler I assume the log will end before 10am 
+##            things simpler I assume the log will end before 10am
 ##            the next day.  Also fixes time conversion issues for
 ##            times earlier than 10am as the values did not have
 ##            leading zeroes (i.e. 00 or 01-09 for hour) by and thus
 ##            the function I was using for time conversion to epoch
-##            time was failing.  I just pad some zeroes in front 
+##            time was failing.  I just pad some zeroes in front
 ##            right before the conversion, and then I add 86400 secs
 ##            if we're rolled past midnight.
-##            Also got rid of the fill_in_the_blanks function by 
+##            Also got rid of the fill_in_the_blanks function by
 ##            rolling it into the zero_start_time function.
 ##         1.0   initial release
 ##
 ##  Usage:      rccsv2gems.pl INPUTFILENAME OUTPUTFILENAME --minsats=X --disable-gps-cleanup
-##         (optional)  --minsats=X where X is the minimum number of gps satellites required 
+##         (optional)  --minsats=X where X is the minimum number of gps satellites required
 ##            for valid data (sets lat/long to null if GpsSats value is less than min)
 ##            Default is 4.
 ##         (optional)  --disable-gps-cleanup disables the cleanup per the GpsSats value.
@@ -105,7 +108,7 @@ if ( $arg3 ) {
       $minimum_sats = (split( /\=/ ,$arg3 ))[1];
    }
    if ( $arg3 =~ /\-\-disable\-gps\-cleanup/ ) {
-      $disable_gps_cleanup="true";      
+      $disable_gps_cleanup="true";
    }
 }
 
@@ -124,8 +127,8 @@ sub modify_headers {
    print "Initiating Header Cleanup - Cleans up column headers.\n";
    for(my $i = 0; $i <= $#{$array[0]} ; $i++){
       my @element = split (/\|/, $array[0][$i]);
-      $array[0][$i]=$element[0];   
-      $array[0][$i] =~ s/\"//g; 
+      $array[0][$i]=$element[0];
+      $array[0][$i] =~ s/\"//g;
    }
    print "Header Cleanup Completed Successfully!\n";
    print "\n";
@@ -136,7 +139,7 @@ sub move_time_to_first_column {
    my $timecolumn="null";
    print "Initiating Moving Time Column to Front - Moves the Time column to the first column.\n";
    for(my $i = 0; $i <= $#{$array[0]} ; $i++){
-      if ( $array[0][$i] =~ /Time/ ) {
+      if ( $array[0][$i] =~ /Utc/ ) {      #identifies the column that contains time, was originally "Time", but I don't see that in my logs
          $timecolumn = $i;
       }
    }
@@ -153,11 +156,9 @@ sub move_time_to_first_column {
 }
 
 sub convert_time {
+
    my $time=$_[0];
-   (my $HHMMSS, my $ms) = split(/\./,$time);
-   my $date = Time::Piece->strptime($HHMMSS, "%H%M%S");
-   my $epoch_time = $date->epoch;
-   my $newtime = "$epoch_time.$ms";
+   my $newtime = $time / 1000;  # ver 2 firmware timestamp is UTC milliseconds already - tcm 21Jan15
    return $newtime;
 }
 
@@ -169,15 +170,15 @@ sub zero_start_time {  #resets the time columns value to start at 0 by subtracti
    my $remove_column=($#{$array[0]} + 1);
    print "Initiating Time Adjustment - Sets all times relative to the start time and converts times to seconds.\n";
    for(my $i = 1; $i <= $#array ; $i++){
-      if ($array[$i][$remove_column] ne "remove"){
-      if (( looks_like_number($array[$i][0]) != 0 ) && ( $last_time > 230000 ) && ( $array[$i][0] < 100000 )){
+      if ($array[$i][$remove_column] ne "remove"){   #ignores rows tagged for removal
+      if (( looks_like_number($array[$i][0]) != 0 ) && ( $last_time > 230000 ) && ( $array[$i][0] < 100000 )){ #if it's a number, time from previous iteration is greater than 230000ms and current time is less than 100000
          $pastmidnight="1";
       }
-      if (( looks_like_number($array[$i][0]) != 0 ) && ($base_time == "null" )) {
+      if (( looks_like_number($array[$i][0]) != 0 ) && ($base_time == "null" )) { #if it's a number, and this is the first time entry
          $last_time=$array[$i][0];
          $base_time=convert_time($array[$i][0]);
          $array[$i][0]="0.000";
-         
+
       }
       else {
          if ( looks_like_number($array[$i][0]) != 0 ) {
@@ -192,12 +193,12 @@ sub zero_start_time {  #resets the time columns value to start at 0 by subtracti
                                                         $array[$i][0]="00$array[$i][0]";
                                         } else { $array[$i][0] = "0$array[$i][0]";
                }
-               
+
             }
             my $converted_time = convert_time($array[$i][0]);
             if ( $pastmidnight == "1" ) {
                $converted_time+=86400;
-            }   
+            }
             my $diff=($converted_time - $base_time);
             $array[$i][0]=sprintf"%.3f",$diff;
          }
@@ -215,7 +216,7 @@ sub strip_ctrlm {
    my @array=@_;
    for(my $i = 0; $i <= $#array ; $i++){
       for(my $j = 0; $j <= $#{$array[0]} ; $j++){
-         $array[$i][$j] =~ s/\r//g;   
+         $array[$i][$j] =~ s/\r//g;
       }
    }
 }
@@ -232,7 +233,7 @@ sub fill_in_the_blanks { # fills in missing data with last known good data.  Ign
             if ( looks_like_number($array[$i][$j]) == "0" ) {
                if ( looks_like_number($line[$j]) == "0" ) {
                   $line[$j]="0.000";
-               }   
+               }
                $array[$i][$j]="$line[$j]";
             }
             else {
@@ -306,10 +307,10 @@ sub tag_junk_lines { #looks for non-numerical characters in the data and tags th
    print "Initiating Junk Line Removal Tagging - looking for lines with non-numerical data and tagging for removal during file output.\n";
    for(my $i = 1; $i <= $#array ; $i++){
       $remove_line="false";
-      for(my $j = 0; $j <= $#{$array[0]} ; $j++){   
+      for(my $j = 0; $j <= $#{$array[0]} ; $j++){
          if (( looks_like_number($array[$i][$j]) == 0 ) && ( $array[$i][$j] ne "" )) {
             print "line $i, element $j, value is $array[$i][$j], has invalid characters, removing\n";
-            $remove_line="true";   
+            $remove_line="true";
          }
       }
       if ( $remove_line eq "true" ) {
@@ -330,7 +331,7 @@ sub clean_gps_for_sats { # processes data removing any lines where GPS Sats are 
    my $remove_column=($#{$array[0]} + 1);
    print "Initiating GPS Cleanup - Removing lat/long when GpsSats is less than minimum of $minimum_sats:\n";
    for(my $i = 0; $i <= $#{$array[0]} ; $i++){
-      if ( $array[0][$i] =~ /GpsSats/ ) {
+      if ( $array[0][$i] =~ /GPSSats/ ) {
          $gpssats_column="$i";
       }
       if ( $array[0][$i] =~ /Latitude/ ) {
@@ -339,7 +340,7 @@ sub clean_gps_for_sats { # processes data removing any lines where GPS Sats are 
       if ( $array[0][$i] =~ /Longitude/ ) {
                         $long_column="$i";
                 }
-         
+
    }
    if (!defined $gpssats_column) {
       die "Error - GPS Processing enabled but no GpsSats column present in data.  Try --disable-gps-cleanup option.  Terminating.\n";
@@ -387,25 +388,25 @@ sub init_pre_gps_data { # finds the first numerical and non-zero lat/long values
       }
    }
         print "Pre-GPS Cleanup Completed Successfully!\n";
-        print "\n";   
+        print "\n";
 }
 
 sub interpolate_time { #interpolates time data for lines between time changes so Dlog99 doesn't drop data when time values are the same
    my @array=@_;
    print "Initiating Time Interpolation - spaces out time measurements so Dlog99 doesn't drop data points for lines with the same time\n";
-   my $remove_column=($#{$array[0]} + 1);   
+   my $remove_column=($#{$array[0]} + 1);
    for(my $i = 1; $i <= $#array ; $i++){
       if (($array[$i][$remove_column] ne "remove") || (($i+1) > $#array)) { # ignore lines tagged for removal and stop if we're at the end
          my $current_time=$array[$i][0];
          my $next_time_line=$i;
          my $num_lines=0;
-         while ((($current_time == $array[$next_time_line][0]) || ($array[$next_time_line][$remove_column] eq "remove")) && ($next_time_line < $#array)) { 
+         while ((($current_time == $array[$next_time_line][0]) || ($array[$next_time_line][$remove_column] eq "remove")) && ($next_time_line < $#array)) {
             $next_time_line++;
             if ($array[$next_time_line][0] ne "remove") {
-               $num_lines++;      
+               $num_lines++;
             }
          }
-            
+
          if ($num_lines > 1) {
             my $diff= (($array[$next_time_line][0] - $array[$i][0]) / $num_lines);
             my $j;
@@ -416,7 +417,7 @@ sub interpolate_time { #interpolates time data for lines between time changes so
             }
             else {
                for($j = ($i+1); $j < $next_time_line; $j++) {
-                  $array[$j][0] = sprintf"%.3f",($array[$j - 1][0] + $diff);   
+                  $array[$j][0] = sprintf"%.3f",($array[$j - 1][0] + $diff);
                }
             }
             $i=($next_time_line - 1); # step forward in the data to the next time
@@ -426,7 +427,7 @@ sub interpolate_time { #interpolates time data for lines between time changes so
    print "Time Interpolation Completed Successfully!\n";
    print "\n";
 }
-   
+
 
 sub main {
    my @data;
@@ -443,7 +444,7 @@ sub main {
    }
    print "\n";
    print "Initiating conversion...\n";
-   
+
 
    open(INFILE,$input) || die "Can't open file $input";
    open(OUTFILE,">$output") || die "FATAL - Can't open file $output";
@@ -473,7 +474,7 @@ sub main {
       tag_pre_gps_data(@data);
    }
    else {
-      init_pre_gps_data(@data);   
+      init_pre_gps_data(@data);
    }
         zero_start_time(@data);
    fill_in_the_blanks(@data);
@@ -491,8 +492,8 @@ sub main {
                print OUTFILE "$data[$i][$j],";
             }
          }
-      
-         print OUTFILE "\r\n";
+
+         print OUTFILE "\r";
       }
         }
 
@@ -500,9 +501,7 @@ sub main {
    close OUTFILE;
 
    print "\n";
-   print "Success!  Input file $file has been converted to $output.\n"; 
+   print "Success!  Input file $file has been converted to $output.\n";
 }
 
 main;
-
-
