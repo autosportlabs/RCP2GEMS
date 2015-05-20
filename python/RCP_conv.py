@@ -5,7 +5,7 @@
 #         GEMS Dlog99 compatible format, so you can then save logs in
 #         Dlog99 into .srt files which can be opened by GEMS Data Analysis
 #         or AEM Data Analysis.
-#  Notes:   Thanks to John Freund for working out required format for GEMS in rccsv2gems.pl 
+#  Notes:   Thanks to John Freund for working out required format for GEMS in rccsv2gems.pl
 # 			Max Value in GEMS CSV inport file is 2147483
 #  Version:    1.0
 #
@@ -60,7 +60,7 @@ def RCP_to_GEMS(filename, num_of_sats=0, output_filename = None):
 						skipped += 1
 					except ValueError:		#Illegal Character :- Continue on next line
 						print "Warning: Illegal Character on row %d "%reader.line_num
-						continue		
+						continue
 					except Exception, e:	#All other exceptions
 						print "Read Error : %s"%e
 						return (False, e)
@@ -74,9 +74,9 @@ def RCP_to_GEMS(filename, num_of_sats=0, output_filename = None):
 			for i in range(len(first_row)):
 				if first_row[i] == '':
 					first_row[i] = 0.0
-			
+
 			first_row[0] = 0.0 															#Set time to zero
-			first_row[1] = 0.0 															#Set GPS time to 
+			first_row[1] = 0.0 															#Set GPS time to
 			if GPSSats_index != 0:
 				first_row[Longitude_index] = first_row[Longitude_index] * to_rads			#Convert to radians
 				first_row[Latitude_index] = first_row[Latitude_index] * to_rads				#Convert to radians
@@ -88,7 +88,7 @@ def RCP_to_GEMS(filename, num_of_sats=0, output_filename = None):
 				try:
 					current_row  = reader.next()
 				except StopIteration:	#Reached end of file
-					return (True, output_filename) 
+					return (True, output_filename)
 				except ValueError:		#Illegal Character :- Continue on next line
 					print "Warning: Illegal Character on row %d "%reader.line_num
 					continue
@@ -96,8 +96,8 @@ def RCP_to_GEMS(filename, num_of_sats=0, output_filename = None):
 					print "Read Error : %s"%e
 					return (False, e)
 
-				current_row[0] = (int(current_row[0]) - start_time)/1000.0  				#Convert time 
-				current_row[1] = (int(current_row[1]) - start_time_gps)/1000.0  			#Convert time 
+				current_row[0] = (int(current_row[0]) - start_time)/1000.0  				#Convert time
+				current_row[1] = (int(current_row[1]) - start_time_gps)/1000.0  			#Convert time
 				if GPSSats_index != 0:
 					current_row[Longitude_index] = current_row[Longitude_index] * to_rads		#Convert to radians
 					current_row[Latitude_index] = current_row[Latitude_index] * to_rads			#Convert to radians
@@ -106,18 +106,25 @@ def RCP_to_GEMS(filename, num_of_sats=0, output_filename = None):
 				for i in range(len(current_row)):
 					if current_row[i] == '':
 						current_row[i] = previous_row[i]
-					
-				previous_row = current_row			
+
+				previous_row = current_row
 				writer.writerows([current_row])
 
 
 
 if __name__ == "__main__":
-
-	if len(sys.argv) == 3:
-		print RCP_to_GEMS(sys.argv[1],sys.argv[2])
+	if len(sys.argv) == 4:
+		print RCP_to_GEMS(sys.argv[1], sys.argv[3], sys.argv[2])
+	elif len(sys.argv) == 3:
+		print RCP_to_GEMS(sys.argv[1], 0, sys.argv[2])
 	elif len(sys.argv) == 2:
-		print RCP_to_GEMS(sys.argv[1],sys.argv[2])
+		print RCP_to_GEMS(sys.argv[1], 0)
 	else:
-		print RCP_to_GEMS("RC_3.log", 4)
-	
+		print "Usage: RCP_Conv.py INPUTFILENAME OUTPUTFILENAME MINSATS"
+		print "-------------------------------------------------------"
+		print "(Required) INPUTFILENAME - Your RCP .LOG file"
+		print "(Optional) OUTPUTFILENAME - Desired output file. If not provided one will be created automatically"
+		print "(Optional) MINSATS - The minimum number of GPS satellites required for valid data"
+
+
+
