@@ -113,7 +113,6 @@ def RCP_to_GEMS(filename, num_of_sats=0, output_filename = None):
 
 
 if __name__ == "__main__":
-	# print len(sys.argv)
 	if len(sys.argv) == 4:
 		print RCP_to_GEMS(sys.argv[1], sys.argv[3], sys.argv[2])
 	elif len(sys.argv) == 3:
